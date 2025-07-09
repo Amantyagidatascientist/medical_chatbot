@@ -7,25 +7,21 @@ from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Load environment variables
 load_dotenv()
 
-# Configuration
+
 DATA_PATH = Path("data")
 EMBEDDING_MODEL_PATH = Path("local_embedding_model")
 VECTORSTORE_PATH = Path("vectorstore/db_faiss")
 
 def setup_environment():
-    """Configure environment settings"""
     os.environ["HF_HUB_DOWNLOAD_TIMEOUT"] = "600"
     os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
     
-    # Create required directories
     DATA_PATH.mkdir(exist_ok=True)
     VECTORSTORE_PATH.parent.mkdir(exist_ok=True)
 
 def load_pdf_files(data_path):
-    """Load and validate PDF documents"""
     if not any(data_path.glob("*.pdf")):
         raise FileNotFoundError(f"No PDF files found in {data_path}")
     
@@ -38,7 +34,6 @@ def load_pdf_files(data_path):
     return loader.load()
 
 def create_chunks(extracted_data):
-    """Split documents into optimized chunks"""
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=50,
@@ -48,7 +43,6 @@ def create_chunks(extracted_data):
     return text_splitter.split_documents(extracted_data)
 
 def setup_embedding_model():
-    """Initialize and cache embedding model"""
     if not EMBEDDING_MODEL_PATH.exists():
         print("Downloading embedding model...")
         model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
@@ -64,10 +58,8 @@ def setup_embedding_model():
     )
 
 def create_vector_store(text_chunks, embedding_model):
-    """Create and validate FAISS index"""
     db = FAISS.from_documents(text_chunks, embedding_model)
     
-    # Verify index creation
     if db.index.ntotal == 0:
         raise ValueError("Empty vector store created - check input documents")
     
@@ -91,11 +83,11 @@ def main():
         vector_db = create_vector_store(chunks, embeddings)
         vector_db.save_local(str(VECTORSTORE_PATH))
         
-        print(f"\n✅ Successfully created vector store at: {VECTORSTORE_PATH}")
+        print(f"\nSuccessfully created vector store at: {VECTORSTORE_PATH}")
         print(f"Index contains {vector_db.index.ntotal} vectors")
         
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
+        print(f"\nError: {str(e)}")
         # Cleanup failed attempts
         if 'vector_db' in locals():
             try:
